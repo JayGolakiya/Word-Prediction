@@ -1,0 +1,47 @@
+<html>
+
+<head>
+    <title>Text Prediction</title>
+    <!-- Compiled and minified CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+    <!-- Compiled and minified JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <style>
+        .center1 {
+            padding: 10% 40%;
+            text-align: center;
+        }
+
+        ::placeholder {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="black">
+        <div class="nav-wrapper">
+            <a href="#" class="brand-logo">Text Prediction</a>
+            <ul id="nav-mobile" class="right hide-on-med-and-down">
+                <li><a href="badges.html">Download</a></li>
+                <li><a href="collapsible.html">About Project</a></li>
+            </ul>
+        </div>
+    </nav>
+<form action="pre.php" method="POST">
+    <div class="center1">
+        <div class="input-field col s7">
+            <input placeholder="Enter Input" type="text" name="input_text	" id="tb1" />
+            <input type="submit" value="predict" />
+        </div>
+        <div class="input-field col s7">
+            <input placeholder="Output will be shown here" type="text" id="tb2" />
+            <input placeholder="Output will be shown here" type="text" id="tb3" />
+            <input placeholder="Output will be shown here" type="text" id="tb4" />
+        </div>
+</form>
+    </div>
+</body>
+
+</html>

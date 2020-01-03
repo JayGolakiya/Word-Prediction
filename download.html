@@ -1,0 +1,285 @@
+
+<html>
+<head>
+    <title>Text Prediction</title>
+    <!-- Compiled and minified CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+    <!-- Compiled and minified JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <style>
+        .center1 {
+            padding: 10% 30%;
+            text-align: center;
+        }
+
+        ::placeholder {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="black">
+        <div class="nav-wrapper">
+            <a href="home.php" class="brand-logo">Home</a>
+            <ul id="nav-mobile" class="right hide-on-med-and-down">
+                <li><a href="modelA.php">Model-A</a></li>
+                <li><a href="modelB.php">Model-B</a></li>
+                <li><a href="download.html">Download</a></li>
+              <!--  <li><a href="badgesA.html">About Project</a></li>-->
+            </ul>
+        </div>
+    </nav>
+    <div >
+	<pre>
+	
+	<h3><a 	align='center' href="https://colab.research.google.com/notebooks/welcome.ipynb">Welcome to Colaboratory!</a></h3>
+		<h2>--------------------MODEL-A--------------</h2>
+<h3>==>A.1 data_cleaning.py</h3>
+
+# -*- coding: utf-8 -*-
+# IMPORTING THE TEXT FOR TRAINING OF THE MODEL
+
+import string
+import pickle
+from keras.preprocessing.text import Tokenizer
+dataset_train = open('[FILENAME]' , encoding='ANSI')
+text = dataset_train.read()
+dataset_train.close()
+
+# PRE-PROCESSING THE DATA IMPORTED(CLEANING)
+text = text.replace('--',' ')
+text = text.replace('??',' ')
+text = text.replace('?',' ')
+text = text.replace('_',' ')
+text = text.replace('*',' ')
+tokens = text.split()
+table = str.maketrans('', '', string.punctuation)
+tokens = [w.translate(table) for w in tokens]
+tokens = [word for word in tokens if word.isalpha()]
+tokens = [word.lower() for word in tokens]
+
+length = 50 + 1
+training_set_clean = list()
+t=list()
+for i in range(length, len(tokens)):
+    seq = tokens[i-length:i]
+    line = ' '.join(seq)
+    training_set_clean.append(line)
+    t.append(line)
+
+with open('training_set_clean.txt', 'w') as f:
+    for item in t:
+        f.write("%s\n" % item)
+        
+<h3>==>A.2 BUILD-MODEL.py</h3>
+
+from numpy import array
+import pickle  
+from keras.preprocessing.text import Tokenizer
+from keras.utils import to_categorical
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import LSTM
+from keras.layers import Embedding
+from keras import optimizers
+import string
+from keras.layers import Dropout
+
+#PRE_PROCESSING THE CLEAN DATASET
+
+training_set_clean = [line.rstrip('\n') for line in open('training_set_clean.txt',encoding='ISO-8859-1')]
+tokenizer = Tokenizer()
+tokenizer.fit_on_sequences(training_set_clean)
+tokenizer.fit_on_texts(training_set_clean)
+sequences = tokenizer.texts_to_sequences(training_set_clean)
+
+vocab_size = len(tokenizer.word_index) + 1
+
+sequences = array(sequences)
+X_train = sequences[:, :-1]
+y_train = sequences[:,-1]
+y_train = to_categorical(y_train, num_classes=vocab_size)
+seq_length = X_train.shape[1]
+
+#TRAIN THE MODEL
+regressor = Sequential()
+regressor.add(Embedding(vocab_size, 20, input_length=seq_length))
+regressor.add(LSTM(units=512,return_sequences=True,input_shape=(seq_length,1)))
+regressor.add(Dropout(0.2))
+regressor.add(LSTM(units=512,return_sequences=True))
+regressor.add(Dropout(0.2))
+regressor.add(LSTM(units=512,return_sequences=True))
+regressor.add(Dropout(0.2))
+regressor.add(LSTM(units=128,return_sequences=True))
+regressor.add(Dropout(0.4))
+regressor.add(LSTM(units=512))
+regressor.add(Dropout(0.4))
+regressor.add(Dense(512, activation='relu'))
+regressor.add(Dense(vocab_size, activation='softmax'))
+optim = optimizers.RMSprop(lr=0.001)
+regressor.compile(loss='categorical_crossentropy', optimizer=optim, metrics=['accuracy'])
+regressor.fit(X_train, y_train, batch_size=256, epochs=1)
+
+#SAVE THE MODEL
+regressor.save('regressor2.h5')
+pickle.dump(tokenizer, open('tokenizer2.pkl', 'wb'))
+
+<h3>==>A.3 TEST-MODEL.py</h3>
+import sys
+from random import randint
+from pickle import load
+from keras.models import load_model
+from keras.preprocessing.sequence import pad_sequences
+ 
+while(True):
+    seed_text=" "
+    #seed_text= input("Enter a word  to predict(Exit to stop):")
+    seed_text= sys.argv[1]
+    seed_text=seed_text.lower()
+    if seed_text == 'exit':
+        break;
+        
+    print(seed_text + '\n')
+    result=[]
+    in_text=seed_text
+
+    for i in range(3): 
+        encoded = tokenizer.texts_to_sequences([in_text])[0]
+        encoded = pad_sequences([encoded], maxlen=seq_length, truncating='pre')
+        yhat = model.predict_classes(encoded, verbose=0)
+        out_word = ''
+        for word, index in tokenizer.word_index.items():
+            if index == yhat:
+                out_word = word
+                result.append(out_word)
+            in_text += ' ' + out_word
+
+    #DISPLAY THE RESULT
+    print(seed_text)
+    print(' '.join(result))
+    break
+	
+	<h2>--------------------MODEL-B--------------</h2>
+	
+<h3>==>B.1 BUILD-MODEL.py</h3>	
+# -*- coding: utf-8 -*-
+import numpy as np
+np.random.seed(42)
+import tensorflow as tf
+tf.set_random_seed(42)
+from keras.models import Sequential, load_model
+from keras.layers import Dense, Activation
+from keras.layers import LSTM, Dropout
+from keras.layers import TimeDistributed
+from keras.layers.core import Dense, Activation, Dropout, RepeatVector
+from keras.optimizers import RMSprop
+import matplotlib.pyplot as plt
+import pickle
+import sys
+import heapq
+import seaborn as sns
+from pylab import rcParams
+
+path = '[FILENAME]'
+text = open(path).read().lower()
+print('corpus length:', len(text))
+
+chars = sorted(list(set(text)))
+char_indices = dict((c, i) for i, c in enumerate(chars))
+indices_char = dict((i, c) for i, c in enumerate(chars))
+SEQUENCE_LENGTH = 40
+step = 3
+sentences = []
+next_chars = []
+for i in range(0, len(text) - SEQUENCE_LENGTH, step):
+    sentences.append(text[i: i + SEQUENCE_LENGTH])
+    next_chars.append(text[i + SEQUENCE_LENGTH])
+
+X = np.zeros((len(sentences), SEQUENCE_LENGTH, len(chars)), dtype=np.bool)
+y = np.zeros((len(sentences), len(chars)), dtype=np.bool)
+for i, sentence in enumerate(sentences):
+    for t, char in enumerate(sentence):
+        X[i, t, char_indices[char]] = 1
+    y[i, char_indices[next_chars[i]]] = 1
+
+model = Sequential()
+model.add(LSTM(128, input_shape=(SEQUENCE_LENGTH, len(chars))))
+model.add(Dense(len(chars)))
+model.add(Activation('softmax'))
+
+optimizer = RMSprop(lr=0.01)
+model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+history = model.fit(X, y, validation_split=0.05, batch_size=128, epochs=20, shuffle=True).history
+
+model.save('keras_model.h5')
+pickle.dump(history, open("history.p", "wb"))
+
+<h3>==>B.2 TEST-MODEL.py</h3>
+import sys
+from random import randint
+import numpy as np
+np.random.seed(42)
+from pickle import load
+from keras.models import load_model
+from keras.preprocessing.sequence import pad_sequences
+import heapq
+
+model = load_model('keras_model1.h5')
+history = load(open('history1.pkl', 'rb'))
+chars = ['\n',' ','!',"'",'(',')',',','-','.','0','1','2','3','4','5','6','7','8','9',':',';','?','_','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
+char_indices = dict((c, i) for i, c in enumerate(chars))
+indices_char = dict((i, c) for i, c in enumerate(chars))
+
+def prepare_input(text):
+    x = np.zeros((1, SEQUENCE_LENGTH, len(chars)))
+    for t, char in enumerate(text):
+        x[0, t, char_indices[char]] = 1.
+        
+    return x
+
+def sample(preds, top_n=3):
+    preds = np.asarray(preds).astype('float64')
+    preds = np.log(preds)
+    exp_preds = np.exp(preds)
+    preds = exp_preds / np.sum(exp_preds)
+    
+    return heapq.nlargest(top_n, range(len(preds)), preds.take)
+
+def predict_completion(text):
+    original_text = text
+    generated = text
+    completion = ''
+    while True:
+        x = prepare_input(text)
+        preds = model.predict(x, verbose=0)[0]
+        next_index = sample(preds, top_n=1)[0]
+        next_char = indices_char[next_index]
+        text = text[1:] + next_char
+        completion += next_char
+        
+        if len(original_text + completion) + 2 > len(original_text) and next_char == ' ':
+            return completion
+        
+def predict_completions(text, n=3):
+    x = prepare_input(text)
+    preds = model.predict(x, verbose=0)[0]
+    next_indices = sample(preds, n)
+    return [indices_char[idx] + predict_completion(text[1:] + indices_char[idx]) for idx in next_indices]
+
+
+if(True):
+    #seq = q[:40].lower()
+    seq = input("Enter: ") 
+    seq1 = seq[:40].lower()
+    seq1 = seq1 + " "*(40 - len(seq))
+    print(seq)
+    result = predict_completions(seq1, 3)
+    print(' '.join(result))
+	
+	<h2>----------------Thank You--------------</h2>
+		</pre>
+    </div>
+</body>
+</html>
